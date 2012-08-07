@@ -16,10 +16,15 @@ MyType myInstance = myVariant.as(MyType.class);
 
 The value you put in doesn't have to belong to the type you pull out, but it must be *convertible* to that type.
 
-By default, Variants can convert any type of Number to any other type of Number (and implement the Number interface themselves), any kind of Number to String, String to any kind of Number, and arrays/Iterables of things it knows how to convert into arrays/Iterables of converted things:
+By default, Variants can convert:
+
+  * Anything to String
+  * Any type of Number to any other type of Number (and implement the Number interface themselves)
+  * String to any kind of Number, and
+  * Arrays/Iterables of things it knows how to convert into arrays/Iterables of converted things
 
 ```java
-assertThat(Variant.of("12").toDouble(), is(12.0));
+assertThat(Variant.of("12").doubleValue(), is(12.0));
 assertThat(Variant.of(12.0).toString(), is("12"));
 assertThat(Variant.of(1, 2, 3, 4).asIterableOf(String.class), Contains.inOrder("1", "2", "3", "4"));
 assertThat(Variant.of("1,2,3,4").asIterableOf(Integer.class), Contains.inOrder(1,2,3,4));
