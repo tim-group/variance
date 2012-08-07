@@ -19,7 +19,10 @@ The value you put in doesn't have to belong to the type you pull out, but it mus
 By default, Variants can convert any type of Number to any other type of Number (and implement the Number interface themselves), any kind of Number to String, String to any kind of Number, and arrays/Iterables of things it knows how to convert into arrays/Iterables of converted things:
 
 ```java
+assertThat(Variant.of("12").toDouble(), is(12.0));
+assertThat(Variant.of(12.0).toString(), is("12"));
 assertThat(Variant.of(1, 2, 3, 4).asIterableOf(String.class), Contains.inOrder("1", "2", "3", "4"));
+assertThat(Variant.of("1,2,3,4").asIterableOf(Integer.class), Contains.inOrder(1,2,3,4));
 ```
 
 You can wire in other conversions by adding them to the *context* the Variant uses to resolve requests for different types. A vanilla Variant will pull its context out of a ThreadLocal, such that you can write:
