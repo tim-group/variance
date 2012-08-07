@@ -41,7 +41,7 @@ public class VariantTest {
     @Test public void
     bound_type_conversion_context_changes_when_thread_local_context_changes() {
         TypeConversionContext before = new CastingTypeConversionContext();
-        ThreadLocalTypeConversionContext.enter(before);
+        ThreadLocalTypeConversionContext.enterNew(before);
         
         Variant variant = Variant.of(null);
         
@@ -51,7 +51,7 @@ public class VariantTest {
         assertThat(before, not(sameInstance(after)));
         ThreadLocalTypeConversionContext.exit();
         
-        ThreadLocalTypeConversionContext.enter(after);
+        ThreadLocalTypeConversionContext.enterNew(after);
         assertThat(variant.context(), sameInstance(after));
         ThreadLocalTypeConversionContext.exit();
     }
@@ -92,5 +92,16 @@ public class VariantTest {
         Variant.of(12).in(mockCtx).as(String.class);
     }
     
+    @Test public void
+    implements_number() {
+        Variant variant = Variant.of(12);
+        
+        assertThat(variant.byteValue(), is((byte) 12));
+        assertThat(variant.intValue(), is(12));
+        assertThat(variant.floatValue(), is(12f));
+        assertThat(variant.doubleValue(), is(12d));
+        assertThat(variant.longValue(), is(12L));
+        assertThat(variant.shortValue(), is((short) 12));
+    }
     
 }
