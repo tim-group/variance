@@ -1,5 +1,6 @@
 package com.youdevise.variance;
 
+import org.hamcrest.Matchers;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.junit.Test;
@@ -31,7 +32,7 @@ public class VariantTest {
     
     @Test public void
     is_bound_to_a_thread_local_type_conversion_context() {
-        Variant variant = Variant.of(null);
+        Variant variant = Variant.of(1);
         
         TypeConversionContext ctx = ThreadLocalTypeConversionContext.current();
         
@@ -43,7 +44,7 @@ public class VariantTest {
         TypeConversionContext before = new CastingTypeConversionContext();
         ThreadLocalTypeConversionContext.enterNew(before);
         
-        Variant variant = Variant.of(null);
+        Variant variant = Variant.of(1);
         
         assertThat(variant.context(), sameInstance(before));
         
@@ -60,7 +61,7 @@ public class VariantTest {
     can_be_bound_to_custom_context() {
         TypeConversionContext newCtx = new CastingTypeConversionContext();
         
-        Variant variant = Variant.of(null).in(newCtx);
+        Variant variant = Variant.of(1).in(newCtx);
         
         assertThat(variant.context(), sameInstance(newCtx));
     }
@@ -104,4 +105,42 @@ public class VariantTest {
         assertThat(variant.shortValue(), is((short) 12));
     }
     
+    @Test public void
+    can_return_an_array() {
+        Variant variant = Variant.of(1, 2, 3, 4, 5, 6, 7, 8, 9);
+        
+        assertThat(variant.asArrayOf(Double.class), equalTo(new Double[] { 1d, 2d, 3d, 4d, 5d, 6d, 7d, 8d ,9d }));
+    }
+    
+    @Test public void
+    can_return_an_iterable() {
+        Variant variant = Variant.of(1, 2, 3, 4, 5, 6, 7, 8, 9);
+        
+        assertThat(variant.asIterableOf(Long.class), Matchers.<Long>hasItems(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L ,9L));
+    }
+    
+    @Test public void
+    returns_a_single_value_as_an_iterable() {
+        assertThat(Variant.of(12).asIterableOf(Integer.class), Matchers.<Integer>hasItem(12));
+    }
+    
+    @Test public void
+    can_be_initialised_with_a_primitive_array() {
+        byte[] bytes = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+        int[] ints = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+        char[] chars = { 'a', 'b', 'c', 'd', 'e', 'f', 'g' };
+        short[] shorts = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+        long[] longs = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+        float[] floats = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+        double[] doubles = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+        Double[] doubleObjects = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0 };
+        
+        assertThat(Variant.of(bytes).asArrayOf(Double.class), equalTo(doubleObjects));
+        assertThat(Variant.of(ints).asArrayOf(Double.class), equalTo(doubleObjects));
+        assertThat(Variant.of(chars).asArrayOf(String.class), equalTo(new String[] { "a", "b", "c", "d", "e", "f", "g"}));
+        assertThat(Variant.of(shorts).asArrayOf(Double.class), equalTo(doubleObjects));
+        assertThat(Variant.of(longs).asArrayOf(Double.class), equalTo(doubleObjects));
+        assertThat(Variant.of(floats).asArrayOf(Double.class), equalTo(doubleObjects));
+        assertThat(Variant.of(doubles).asArrayOf(Double.class), equalTo(doubleObjects));
+    }
 }

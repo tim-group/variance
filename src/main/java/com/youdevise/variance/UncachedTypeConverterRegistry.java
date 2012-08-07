@@ -3,6 +3,7 @@ package com.youdevise.variance;
 import java.util.Set;
 
 import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import com.google.common.base.Preconditions;
 
 
@@ -26,7 +27,12 @@ public class UncachedTypeConverterRegistry implements TypeConverterRegistry {
         return converter;
     }
     
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     private <S, T> Function<? super S, ? extends T> findConverter(Class<S> sourceClass, Class<T> targetClass) {
+        if (targetClass.isAssignableFrom(sourceClass)) {
+            return (Function) Functions.identity();
+        }
+        
         ClassHierarchyInspector inspector = new ClassHierarchyInspector(dictionary.sourceClasses());
         
         Class<? super S> nearestSuperclass = inspector.nearestClassAssignableFrom(sourceClass);

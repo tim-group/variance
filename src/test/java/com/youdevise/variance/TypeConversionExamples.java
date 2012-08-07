@@ -14,6 +14,7 @@ import org.junit.Test;
 import com.google.common.base.Function;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 public class TypeConversionExamples {
@@ -100,5 +101,16 @@ public class TypeConversionExamples {
         
         assertThat(Variant.of(12.3456f).as(String.class), is("12.35"));
         assertThat(Variant.of(12.3456f).in(fourDigitContext).as(String.class), is("12.3456"));
+    }
+    
+    @Test public void
+    comma_separated_string_to_array() {
+        assertThat(Variant.of("1,2,3").asArrayOf(Double.class), equalTo(new Double[] { 1d, 2d, 3d }));
+        assertThat(Variant.of("1,2,3").asArrayOf(String.class), equalTo(new String[] { "1", "2", "3" }));
+    }
+    
+    @Test public void
+    array_to_a_comma_separated_string() {
+        assertThat(Variant.of(1, 2, 3).toString(), equalTo("1,2,3"));
     }
 }
