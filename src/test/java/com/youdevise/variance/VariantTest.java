@@ -4,11 +4,6 @@ import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.junit.Test;
 
-import com.youdevise.variance.ThreadLocalTypeConversionContext;
-import com.youdevise.variance.TypeConversionContext;
-import com.youdevise.variance.TypeConversionContexts;
-import com.youdevise.variance.Variant;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -38,30 +33,32 @@ public class VariantTest {
     is_bound_to_a_thread_local_type_conversion_context() {
         Variant variant = Variant.of(null);
         
-        TypeConversionContext ctx = ThreadLocalTypeConversionContext.getInstance();
+        TypeConversionContext ctx = ThreadLocalTypeConversionContext.current();
         
         assertThat(variant.context(), sameInstance(ctx));
     }
     
     @Test public void
     bound_type_conversion_context_changes_when_thread_local_context_changes() {
-        TypeConversionContext before = TypeConversionContexts.getDefault();
-        ThreadLocalTypeConversionContext.setInstance(before);
+        TypeConversionContext before = new CastingTypeConversionContext();
+        ThreadLocalTypeConversionContext.enter(before);
         
         Variant variant = Variant.of(null);
         
         assertThat(variant.context(), sameInstance(before));
         
-        TypeConversionContext after = TypeConversionContexts.getDefault();
+        TypeConversionContext after = new CastingTypeConversionContext();
         assertThat(before, not(sameInstance(after)));
+        ThreadLocalTypeConversionContext.exit();
         
-        ThreadLocalTypeConversionContext.setInstance(after);
+        ThreadLocalTypeConversionContext.enter(after);
         assertThat(variant.context(), sameInstance(after));
+        ThreadLocalTypeConversionContext.exit();
     }
     
     @Test public void
     can_be_bound_to_custom_context() {
-        TypeConversionContext newCtx = TypeConversionContexts.getDefault();
+        TypeConversionContext newCtx = new CastingTypeConversionContext();
         
         Variant variant = Variant.of(null).in(newCtx);
         

@@ -17,7 +17,7 @@ public class Variant {
         this.value = value;
         this.typeConversionContextSupplier = new Supplier<TypeConversionContext>() {
             @Override public TypeConversionContext get() {
-                return ThreadLocalTypeConversionContext.getInstance();
+                return ThreadLocalTypeConversionContext.current();
             }
         };
     }
