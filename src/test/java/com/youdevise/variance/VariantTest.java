@@ -5,6 +5,8 @@ import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.junit.Test;
 
+import com.google.common.collect.Iterables;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -140,6 +142,15 @@ public class VariantTest {
     }
     
     @Test public void
+    can_return_an_iterable_of_variants() {
+        Variant variant = Variant.of(1, 2, 3, 4, 5, 6, 7, 8, 9);
+        
+        Iterable<Variant> variants = variant.asIterableOf(Variant.class);
+        
+        assertThat(variants.iterator().next().intValue(), is(1));
+    }
+    
+    @Test public void
     can_be_initialised_with_a_primitive_array() {
         byte[] bytes = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
         int[] ints = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
@@ -157,5 +168,29 @@ public class VariantTest {
         assertThat(Variant.of(longs).asArrayOf(Double.class), equalTo(doubleObjects));
         assertThat(Variant.of(floats).asArrayOf(Double.class), equalTo(doubleObjects));
         assertThat(Variant.of(doubles).asArrayOf(Double.class), equalTo(doubleObjects));
+    }
+    
+    @Test public void
+    iterable_members_are_bound_to_parent_context() {
+        TypeConversionContext childContext = new CastingTypeConversionContext();
+        Variant child = Variant.of("1").in(childContext);
+        Variant[] children = { child };
+
+        Variant parent = Variant.of(children);
+        assertThat(Iterables.getFirst(parent.asIterableOf(Variant.class), null).context(), Matchers.sameInstance(parent.context()));
+    }
+    
+    @Test public void
+    iterable_members_are_rebound_when_parent_is_transferred_to_new_context() {
+        TypeConversionContext childContext = new CastingTypeConversionContext();
+        Variant child = Variant.of("1").in(childContext);
+        Variant[] children = { child };
+        
+        Variant parent = Variant.of(children);
+        assertThat(Iterables.getFirst(parent.asIterableOf(Variant.class), null).context(), Matchers.sameInstance(parent.context()));
+        
+        TypeConversionContext newParentContext = new CastingTypeConversionContext();
+        assertThat(Iterables.getFirst(parent.in(newParentContext).asIterableOf(Variant.class), null).context(),
+                   Matchers.sameInstance(newParentContext));
     }
 }

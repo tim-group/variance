@@ -1,6 +1,8 @@
 package com.youdevise.variance;
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
@@ -13,74 +15,75 @@ import com.google.common.collect.Lists;
 public class Variant extends Number implements Supplier<Object> {
 
     private static final long serialVersionUID = 6200248721405100437L;
-
+    
+    @SuppressWarnings({ "rawtypes" })
     public static Variant of(Object value) {
+        Preconditions.checkNotNull(value, "A variant cannot have a null value.");
+        
+        if (value instanceof Variant) {
+            return (Variant) value;
+        }
+        
+        if (value.getClass().isArray()) {
+            return ofVariants(arrayToVariants(value));
+        }
+        
+        if (value instanceof Iterable) {
+            return of((Iterable) value);
+        }
+        
         return new Variant(value);
     }
     
-    public static Variant of(Object[] values) {
-        return new Variant(Lists.newArrayList(values));
-    }
-    
-    public static Variant of(int[] values) {
-        return of(toBoxedArray(Integer.class, values));
-    }
-    
-    public static Variant of(byte[] values) {
-        return of(toBoxedArray(Byte.class, values));
-    }
-    
-    public static Variant of(short[] values) {
-        return of(toBoxedArray(Short.class, values));
-    }
-    
-    public static Variant of(long[] values) {
-        return of(toBoxedArray(Long.class, values));
-    }
-    
-    public static Variant of(float[] values) {
-        return of(toBoxedArray(Float.class, values));
-    }
-    
-    public static Variant of(double[] values) {
-        return of(toBoxedArray(Double.class, values));
-    }
-    
-    public static Variant of(char[] values) {
-        return of(toBoxedArray(Character.class, values));
-    }
-    
-    @SuppressWarnings("unchecked")
-    private static <T> T[] toBoxedArray(Class<T> boxClass, Object components) {
-        final int length = Array.getLength(components);
-        Object res = Array.newInstance(boxClass, length);
-
-        for (int i = 0; i < length; i++) {
-            Array.set(res, i, Array.get(components, i));
-        }
-
-        return (T[]) res;
-    }
-
     public static Variant of(Object firstValue, Object...moreValues) {
-        return new Variant(Lists.asList(firstValue, moreValues));
+        return of(Lists.asList(firstValue, moreValues));
+    }
+    
+    public static Variant of(Iterable<?> values) {
+        return ofVariants(Iterables.transform(values, Variants.toVariant));
+    }
+
+    public static Variant ofVariants(Variant...variants) {
+        return ofVariants(Lists.newArrayList(variants));
+    }
+    
+    public static Variant ofVariants(Iterable<Variant> variants) {
+        return new Variant(variants);
+    }
+    
+    private static Iterable<Variant> arrayToVariants(Object value) {
+        Collection<Variant> results = new ArrayList<Variant>(Array.getLength(value));
+        for (int i=0; i<Array.getLength(value); i++) {
+            results.add(Variant.of(Array.get(value, i)));
+        }
+        return results;
     }
     
     private final Object value;
     private final Supplier<TypeConversionContext> typeConversionContextSupplier;
     
     private Variant(Object value) {
-        this.value = value;
-        this.typeConversionContextSupplier = new Supplier<TypeConversionContext>() {
-            @Override public TypeConversionContext get() {
-                return ThreadLocalTypeConversionContext.current();
-            }
-        };
+        this(value, ThreadLocalTypeConversionContext.supplier);
     }
     
+    
+    @SuppressWarnings("unchecked")
     private Variant(Object value, Supplier<TypeConversionContext> typeConversionContextSupplier) {
-        this.value = value;
+        if (value instanceof Iterable) {
+            this.value = bound((Iterable<Variant>) value, this);
+        } else {
+            this.value = value;
+        }
         this.typeConversionContextSupplier = typeConversionContextSupplier;
+    }
+
+    private Iterable<Variant> bound(Iterable<Variant> values, final Variant parent) {
+        Supplier<TypeConversionContext> supplier = new Supplier<TypeConversionContext>() {
+            @Override public TypeConversionContext get() {
+                return parent.context();
+            }
+        };
+        return Iterables.transform(values, Variants.inContext(supplier));
     }
     
     public <C> C as(Class<C> targetClass) {
@@ -106,7 +109,11 @@ public class Variant extends Number implements Supplier<Object> {
     }
     
     public Variant in(TypeConversionContext ctx) {
-        return new Variant(value, Suppliers.ofInstance(ctx));
+        return in(Suppliers.ofInstance(ctx));
+    }
+    
+    public Variant in(Supplier<TypeConversionContext> ctx) {
+        return new Variant(value, ctx);
     }
 
     public Class<?> valueClass() {

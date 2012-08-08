@@ -2,7 +2,15 @@ package com.youdevise.variance;
 
 import java.util.Stack;
 
+import com.google.common.base.Supplier;
+
 public final class ThreadLocalTypeConversionContext {
+    
+    public static final Supplier<TypeConversionContext> supplier = new Supplier<TypeConversionContext>() {
+        @Override public TypeConversionContext get() {
+            return current();
+        }
+    };
     
     private static final ThreadLocal<Stack<TypeConversionContext>> threadLocal =
             new ThreadLocal<Stack<TypeConversionContext>>() {

@@ -111,7 +111,6 @@ public class TypeConversionExamples {
     
     @Test public void
     array_to_a_comma_separated_string() {
-        assertThat(Variant.of(1, 2, 3).toString(), equalTo("1,2,3"));
-        assertThat(Variant.of(Variant.of(1, 2, 3).asIterableOf(String.class)).toString(), equalTo("1.00,2.00,3.00"));
+        assertThat(Variant.of(1, 2, 3).toString(), equalTo("1.00,2.00,3.00"));
     }
 }
