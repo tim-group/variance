@@ -10,7 +10,7 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
-public class Variant extends Number {
+public class Variant extends Number implements Supplier<Object> {
 
     private static final long serialVersionUID = 6200248721405100437L;
 
@@ -116,6 +116,10 @@ public class Variant extends Number {
     public TypeConversionContext context() {
         return typeConversionContextSupplier.get();
     }
+    
+    public boolean isConvertibleTo(Class<?> targetClass) {
+        return context().canConvert(value, targetClass);
+    }
 
     @Override
     public int intValue() {
@@ -153,5 +157,10 @@ public class Variant extends Number {
             return Objects.equal(((Variant) o).value, value);
         }
         return false;
+    }
+
+    @Override
+    public Object get() {
+        return value;
     }
 }

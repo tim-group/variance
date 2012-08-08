@@ -22,12 +22,27 @@ public class VariantTest {
         assertThat(variant.as(String.class), is("A string"));
     }
     
+    @Test public void
+    exposes_its_value_as_object_through_the_supplier_interface() {
+        Variant variant = Variant.of("A string");
+        
+        assertThat(variant.get(), Matchers.<Object>equalTo("A string"));
+    }
+    
     @SuppressWarnings("rawtypes")
     @Test public void
     exposes_the_type_of_its_value() {
         Variant variant = Variant.of(12L);
         
         assertThat(variant.valueClass(), equalTo((Class) Long.class));
+    }
+    
+    @Test public void
+    knows_whether_it_is_convertible_to_a_given_type() {
+        Variant variant = Variant.of(12L);
+        
+        assertThat(variant.isConvertibleTo(Thread.class), is(false));
+        assertThat(variant.isConvertibleTo(Integer.class), is(true));
     }
     
     @Test public void
