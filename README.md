@@ -34,12 +34,12 @@ You can wire in other conversions by adding them to the *context* the Variant us
 
 ```java
 \\ Enter a context in which numbers are formatted to 4d.p. on conversion to string
-ThreadLocalTypeConversionContext.enterExtended(myCustomContext);
+ImplicitTypeConversions.enterExtended(myCustomContext);
 
 assertThat(Variant.of(12).as(String.class), is("12.0000"));
 
 \\ Leave the custom context
-ThreadLocalTypeConversionContext.exit();
+ImplicitTypeConversions.exit()
 
 assertThat(Variant.of(12).as(String.class), is("12"));
 ```
@@ -53,5 +53,5 @@ assertThat(Variant.of(12).in(myCustomContext).as(String.class), is("12.0000"));
 In most cases, you will want to extend an existing context rather than create a new context from scratch:
 
 ```java
-TypeConversionContext extended = ThreadLocalTypeConversionContext.getCurrent().extendedWith(extensions);
+TypeConversionContext extended = ImplicitTypeConversions.getCurrent().extendedWith(extensions);
 ```
