@@ -63,7 +63,7 @@ public class Variant extends Number implements Supplier<Object> {
     private final Supplier<TypeConversionContext> typeConversionContextSupplier;
     
     private Variant(Object value) {
-        this(value, ThreadLocalTypeConversionContext.supplier);
+        this(value, ImplicitTypeConversions.supplier);
     }
     
     

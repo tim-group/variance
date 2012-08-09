@@ -7,11 +7,11 @@ public class TypeConverterRegistryBuilder {
     private final TypeConverterDictionary dictionary;
     
     public TypeConverterRegistryBuilder() {
-        dictionary = new RegularTypeConverterDictionary();
+        dictionary = new TypeConverterDictionary();
     }
     
     public TypeConverterRegistry build() {
-        return new CachedTypeConverterRegistry(new UncachedTypeConverterRegistry(dictionary));
+        return new CachingTypeConverterRegistry(new UncachedTypeConverterRegistry(dictionary));
     }
     
     public <S, T> TypeConverterRegistryBuilder register(Class<S> sourceClass, Class<T> targetClass, Function<S, T> converter) {

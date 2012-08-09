@@ -10,12 +10,28 @@ import com.google.common.collect.Iterables;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
 
 public class VariantTest {
 
     private final Mockery context = new Mockery();
+    
+    private static final class TestTypeConversionContext implements TypeConversionContext {
+        @Override
+        public <C> boolean canConvert(Object o, Class<C> targetClass) {
+            return TypeConversions.standardContext.canConvert(o, targetClass);
+        }
+
+        @Override
+        public <C> C convert(Object o, Class<C> targetClass) {
+            return TypeConversions.standardContext.convert(o, targetClass);
+        }
+
+        @Override
+        public TypeConversionContext extendedWith(TypeConversionContext ctx) {
+            return null;
+        }
+    }
     
     @Test public void
     stores_a_value() {
@@ -51,32 +67,31 @@ public class VariantTest {
     is_bound_to_a_thread_local_type_conversion_context() {
         Variant variant = Variant.of(1);
         
-        TypeConversionContext ctx = ThreadLocalTypeConversionContext.current();
+        TypeConversionContext ctx = ImplicitTypeConversions.current();
         
         assertThat(variant.context(), sameInstance(ctx));
     }
     
     @Test public void
     bound_type_conversion_context_changes_when_thread_local_context_changes() {
-        TypeConversionContext before = new CastingTypeConversionContext();
-        ThreadLocalTypeConversionContext.enterNew(before);
+        TypeConversionContext before = new TestTypeConversionContext();
+        ImplicitTypeConversions.enterNew(before);
         
         Variant variant = Variant.of(1);
         
         assertThat(variant.context(), sameInstance(before));
         
-        TypeConversionContext after = new CastingTypeConversionContext();
-        assertThat(before, not(sameInstance(after)));
-        ThreadLocalTypeConversionContext.exit();
+        ImplicitTypeConversions.exit();
         
-        ThreadLocalTypeConversionContext.enterNew(after);
+        TypeConversionContext after = new TestTypeConversionContext();
+        ImplicitTypeConversions.enterNew(after);
         assertThat(variant.context(), sameInstance(after));
-        ThreadLocalTypeConversionContext.exit();
+        ImplicitTypeConversions.exit();
     }
     
     @Test public void
     can_be_bound_to_custom_context() {
-        TypeConversionContext newCtx = new CastingTypeConversionContext();
+        TypeConversionContext newCtx = new TestTypeConversionContext();
         
         Variant variant = Variant.of(1).in(newCtx);
         
@@ -172,7 +187,7 @@ public class VariantTest {
     
     @Test public void
     iterable_members_are_bound_to_parent_context() {
-        TypeConversionContext childContext = new CastingTypeConversionContext();
+        TypeConversionContext childContext = new TestTypeConversionContext();
         Variant child = Variant.of("1").in(childContext);
         Variant[] children = { child };
 
@@ -182,15 +197,13 @@ public class VariantTest {
     
     @Test public void
     iterable_members_are_rebound_when_parent_is_transferred_to_new_context() {
-        TypeConversionContext childContext = new CastingTypeConversionContext();
-        Variant child = Variant.of("1").in(childContext);
+        TypeConversionContext childContext = new TestTypeConversionContext();
+        TypeConversionContext parentContext = new TestTypeConversionContext();
+        final Variant child = Variant.of("1").in(childContext);
         Variant[] children = { child };
         
         Variant parent = Variant.of(children);
-        assertThat(Iterables.getFirst(parent.asIterableOf(Variant.class), null).context(), Matchers.sameInstance(parent.context()));
-        
-        TypeConversionContext newParentContext = new CastingTypeConversionContext();
-        assertThat(Iterables.getFirst(parent.in(newParentContext).asIterableOf(Variant.class), null).context(),
-                   Matchers.sameInstance(newParentContext));
+        Variant transferred = parent.in(parentContext);
+        assertThat(Iterables.getFirst(transferred.asIterableOf(Variant.class), null).context(), Matchers.sameInstance(parentContext));
     }
 }

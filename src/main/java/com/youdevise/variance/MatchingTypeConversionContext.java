@@ -44,7 +44,7 @@ public class MatchingTypeConversionContext implements TypeConversionContext {
     }
 
     @Override
-    public TypeConversionContext extendWith(TypeConversionContext ctx) {
+    public TypeConversionContext extendedWith(TypeConversionContext ctx) {
         return new ChainedTypeConversionContext(ctx, this);
     }
 

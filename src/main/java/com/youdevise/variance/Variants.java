@@ -6,6 +6,7 @@ import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 
 public final class Variants {
+    
     public static final Function<Object, Variant> toVariant = new Function<Object, Variant>() {
         @Override public Variant apply(Object object) { return Variant.of(object); }
     };

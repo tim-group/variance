@@ -27,7 +27,7 @@ public class CachedTypeConverterRegistryTest {
             oneOf(mockRegistry).getConverter(Integer.class, String.class); will(returnValue(intToString));
         }});
         
-        CachedTypeConverterRegistry cachedRegistry = new CachedTypeConverterRegistry(mockRegistry);
+        CachingTypeConverterRegistry cachedRegistry = new CachingTypeConverterRegistry(mockRegistry);
         
         assertThat(cachedRegistry.getConverter(Integer.class, String.class), is((Function) intToString));
         context.assertIsSatisfied();
@@ -43,7 +43,7 @@ public class CachedTypeConverterRegistryTest {
             oneOf(mockRegistry).getConverter(Integer.class, String.class); will(returnValue(intToString));
         }});
         
-        CachedTypeConverterRegistry cachedRegistry = new CachedTypeConverterRegistry(mockRegistry);
+        CachingTypeConverterRegistry cachedRegistry = new CachingTypeConverterRegistry(mockRegistry);
         
         assertThat(cachedRegistry.getConverter(Integer.class, String.class), is((Function) intToString));
         assertThat(cachedRegistry.getConverter(Integer.class, String.class), is((Function) intToString));
@@ -58,7 +58,7 @@ public class CachedTypeConverterRegistryTest {
             allowing(mockRegistry).hasConverter(Integer.class, String.class); will(returnValue(false));
         }});
         
-        CachedTypeConverterRegistry cachedRegistry = new CachedTypeConverterRegistry(mockRegistry);
+        CachingTypeConverterRegistry cachedRegistry = new CachingTypeConverterRegistry(mockRegistry);
         
         assertThat(cachedRegistry.hasConverter(Integer.class, String.class), is(false));
         cachedRegistry.getConverter(Integer.class, String.class);

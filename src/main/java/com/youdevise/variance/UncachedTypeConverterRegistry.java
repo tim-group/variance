@@ -29,10 +29,6 @@ public class UncachedTypeConverterRegistry implements TypeConverterRegistry {
     
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private <S, T> Function<? super S, ? extends T> findConverter(Class<S> sourceClass, Class<T> targetClass) {
-        if (targetClass.equals(Variant.class)) {
-            return (Function) Variants.toVariant;
-        }
-        
         if (targetClass.isAssignableFrom(sourceClass)) {
             return (Function) Functions.identity();
         }
