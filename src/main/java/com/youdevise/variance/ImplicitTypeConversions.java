@@ -6,23 +6,24 @@ import com.google.common.base.Supplier;
 
 public final class ImplicitTypeConversions {
     
-    public static final Supplier<TypeConversionContext> supplier = new Supplier<TypeConversionContext>() {
-        @Override public TypeConversionContext get() {
-            return current();
-        }
-    };
+    public static final TypeConversionContext implicitContext = new ProxyingTypeConversionContext(new Supplier<TypeConversionContext>() {
+        @Override public TypeConversionContext get() { return current(); }
+    });
     
     private static final ThreadLocal<Stack<TypeConversionContext>> threadLocal =
             new ThreadLocal<Stack<TypeConversionContext>>() {
                 @Override protected Stack<TypeConversionContext> initialValue() {
                     Stack<TypeConversionContext> contextStack = new Stack<TypeConversionContext>();
-                    contextStack.push(TypeConversions.standardContext);
                     return contextStack;
                 }
     };
     
     public static TypeConversionContext current() {
-        return threadLocal.get().peek();
+        Stack<TypeConversionContext> stack = threadLocal.get();
+        if (stack.isEmpty()) {
+            return null;
+        }
+        return stack.peek();
     }
 
     public static void enterNew(TypeConversionContext context) {
@@ -31,12 +32,16 @@ public final class ImplicitTypeConversions {
     
     public static void enterExtended(TypeConversionContext context) {
         TypeConversionContext old = current();
-        enterNew(old.extendedWith(context));
+        if (old == null) {
+            enterNew(context);
+        } else {
+            enterNew(old.extendedWith(context));
+        }
     }
     
     public static void exit() {
         Stack<TypeConversionContext> stack = threadLocal.get();
-        if (stack.size()==1) {
+        if (stack.size()==0) {
             throw new IllegalStateException("Exit called without corresponding Enter");
         }
         stack.pop();

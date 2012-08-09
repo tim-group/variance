@@ -2,8 +2,6 @@ package com.youdevise.variance;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 
 public final class Variants {
     
@@ -14,10 +12,6 @@ public final class Variants {
     private Variants() { }
 
     public static final Function<Object, Variant> toVariant(TypeConversionContext context)  {
-        return Variants.toVariant(Suppliers.ofInstance(context));
-    }
-
-    public static final Function<Object, Variant> toVariant(Supplier<TypeConversionContext> context)  {
         return Functions.compose(Variants.inContext(context), toVariant);
     }
 
@@ -31,15 +25,7 @@ public final class Variants {
         return Functions.compose(variantTo(targetClass), Variants.inContext(context));
     }
 
-    public static <T> Function<Variant, T> variantTo(Class<T> targetClass, Supplier<TypeConversionContext> context) {
-        return Functions.compose(variantTo(targetClass), Variants.inContext(context));
-    }
-
-    public static Function<Variant, Variant> inContext(TypeConversionContext context) {
-        return Variants.inContext(Suppliers.ofInstance(context));
-    }
-
-    public static Function<Variant, Variant> inContext(final Supplier<TypeConversionContext> context) {
+    public static Function<Variant, Variant> inContext(final TypeConversionContext context) {
         return new Function<Variant, Variant>() {
             @Override public Variant apply(Variant variant) {
                 return variant.in(context);

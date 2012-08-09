@@ -5,33 +5,16 @@ import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.junit.Test;
 
+import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
 
 public class VariantTest {
 
     private final Mockery context = new Mockery();
-    
-    private static final class TestTypeConversionContext implements TypeConversionContext {
-        @Override
-        public <C> boolean canConvert(Object o, Class<C> targetClass) {
-            return TypeConversions.standardContext.canConvert(o, targetClass);
-        }
-
-        @Override
-        public <C> C convert(Object o, Class<C> targetClass) {
-            return TypeConversions.standardContext.convert(o, targetClass);
-        }
-
-        @Override
-        public TypeConversionContext extendedWith(TypeConversionContext ctx) {
-            return null;
-        }
-    }
     
     @Test public void
     stores_a_value() {
@@ -64,38 +47,43 @@ public class VariantTest {
     }
     
     @Test public void
-    is_bound_to_a_thread_local_type_conversion_context() {
-        Variant variant = Variant.of(1);
+    is_bound_to_a_thread_local_type_conversion_context() {        
+        ImplicitTypeConversions.enterExtended(contextWithMarker("marker"));
         
-        TypeConversionContext ctx = ImplicitTypeConversions.current();
-        
-        assertThat(variant.context(), sameInstance(ctx));
+        try {
+            assertThat(Variant.of(1).toString(), is("marker"));
+        } finally {
+            ImplicitTypeConversions.exit();
+        }
     }
     
     @Test public void
     bound_type_conversion_context_changes_when_thread_local_context_changes() {
-        TypeConversionContext before = new TestTypeConversionContext();
-        ImplicitTypeConversions.enterNew(before);
-        
         Variant variant = Variant.of(1);
         
-        assertThat(variant.context(), sameInstance(before));
-        
+        ImplicitTypeConversions.enterNew(contextWithMarker("before"));
+        assertThat(variant.toString(), is("before"));
         ImplicitTypeConversions.exit();
         
-        TypeConversionContext after = new TestTypeConversionContext();
-        ImplicitTypeConversions.enterNew(after);
-        assertThat(variant.context(), sameInstance(after));
+        ImplicitTypeConversions.enterNew(contextWithMarker("after"));
+        assertThat(variant.toString(), is("after"));
         ImplicitTypeConversions.exit();
     }
     
     @Test public void
     can_be_bound_to_custom_context() {
-        TypeConversionContext newCtx = new TestTypeConversionContext();
+        Variant variant = Variant.of(1).in(contextWithMarker("custom"));
         
-        Variant variant = Variant.of(1).in(newCtx);
+        assertThat(variant.toString(), is("custom"));
+    }
+    
+    @Test public void
+    custom_context_overrides_thread_local_context() {
+        Variant variant = Variant.of(1).in(contextWithMarker("custom"));
         
-        assertThat(variant.context(), sameInstance(newCtx));
+        ImplicitTypeConversions.enterNew(contextWithMarker("before"));
+        assertThat(variant.toString(), is("custom"));
+        ImplicitTypeConversions.exit();
     }
     
     @Test public void
@@ -115,14 +103,8 @@ public class VariantTest {
     }
     
     @Test(expected=IllegalArgumentException.class) public void
-    throws_illegal_argument_exception_if_context_cannot_convert_value() {
-        final TypeConversionContext mockCtx = context.mock(TypeConversionContext.class);
-        
-        context.checking(new Expectations() {{
-            allowing(mockCtx).canConvert(12, String.class); will(returnValue(false));
-        }});
-        
-        Variant.of(12).in(mockCtx).as(String.class);
+    throws_illegal_argument_exception_if_context_cannot_convert_value() {       
+        Variant.of(12).as(Thread.class);
     }
     
     @Test public void
@@ -187,23 +169,32 @@ public class VariantTest {
     
     @Test public void
     iterable_members_are_bound_to_parent_context() {
-        TypeConversionContext childContext = new TestTypeConversionContext();
-        Variant child = Variant.of("1").in(childContext);
+        Variant child = Variant.of("1").in(contextWithMarker("child"));
         Variant[] children = { child };
 
         Variant parent = Variant.of(children);
-        assertThat(Iterables.getFirst(parent.asIterableOf(Variant.class), null).context(), Matchers.sameInstance(parent.context()));
+        assertThat(Iterables.getFirst(parent.asIterableOf(Variant.class), null).toString(), is("1"));
     }
     
     @Test public void
     iterable_members_are_rebound_when_parent_is_transferred_to_new_context() {
-        TypeConversionContext childContext = new TestTypeConversionContext();
-        TypeConversionContext parentContext = new TestTypeConversionContext();
-        final Variant child = Variant.of("1").in(childContext);
+        final Variant child = Variant.of(1).in(contextWithMarker("child"));
         Variant[] children = { child };
         
         Variant parent = Variant.of(children);
-        Variant transferred = parent.in(parentContext);
-        assertThat(Iterables.getFirst(transferred.asIterableOf(Variant.class), null).context(), Matchers.sameInstance(parentContext));
+        Variant transferred = parent.in(contextWithMarker("parent"));
+        assertThat(Iterables.getFirst(transferred.asIterableOf(Variant.class), null).toString(), is("parent"));
+    }
+    
+    private Function<Integer, String> contextMarker(final String marker) {
+        return new Function<Integer, String>() {
+            @Override public String apply(Integer arg0) { return marker; }
+        };
+    }
+    
+    private TypeConversionContext contextWithMarker(String marker) {
+        return MatchingTypeConversionContext.builder()
+                .register(Integer.class, String.class, contextMarker(marker))
+                .build();
     }
 }

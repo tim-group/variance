@@ -8,7 +8,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
@@ -60,30 +59,29 @@ public class Variant extends Number implements Supplier<Object> {
     }
     
     private final Object value;
-    private final Supplier<TypeConversionContext> typeConversionContextSupplier;
+    private final TypeConversionContext typeConversionContext;
     
     private Variant(Object value) {
-        this(value, ImplicitTypeConversions.supplier);
+        this(value, new ChainedTypeConversionContext(ImplicitTypeConversions.implicitContext, TypeConversions.standardContext));
     }
     
     
     @SuppressWarnings("unchecked")
-    private Variant(Object value, Supplier<TypeConversionContext> typeConversionContextSupplier) {
+    private Variant(Object value, TypeConversionContext boundContext) {
         if (value instanceof Iterable) {
-            this.value = bound((Iterable<Variant>) value, this);
+            this.value = bound((Iterable<Variant>) value, boundContext);
         } else {
             this.value = value;
         }
-        this.typeConversionContextSupplier = typeConversionContextSupplier;
+        this.typeConversionContext = boundContext;
     }
 
-    private Iterable<Variant> bound(Iterable<Variant> values, final Variant parent) {
-        Supplier<TypeConversionContext> supplier = new Supplier<TypeConversionContext>() {
-            @Override public TypeConversionContext get() {
-                return parent.context();
+    private Iterable<Variant> bound(Iterable<Variant> values, final TypeConversionContext typeConversionContext) {
+        return Iterables.transform(values, new Function<Variant, Variant>() {
+            @Override public Variant apply(Variant arg0) {
+                return new Variant(arg0.value, typeConversionContext);
             }
-        };
-        return Iterables.transform(values, Variants.inContext(supplier));
+        });
     }
     
     public <C> C as(Class<C> targetClass) {
@@ -109,11 +107,7 @@ public class Variant extends Number implements Supplier<Object> {
     }
     
     public Variant in(TypeConversionContext ctx) {
-        return in(Suppliers.ofInstance(ctx));
-    }
-    
-    public Variant in(Supplier<TypeConversionContext> ctx) {
-        return new Variant(value, ctx);
+        return new Variant(value, new ChainedTypeConversionContext(ctx, typeConversionContext));
     }
 
     public Class<?> valueClass() {
@@ -121,7 +115,7 @@ public class Variant extends Number implements Supplier<Object> {
     }
 
     public TypeConversionContext context() {
-        return typeConversionContextSupplier.get();
+        return typeConversionContext;
     }
     
     public boolean isConvertibleTo(Class<?> targetClass) {
